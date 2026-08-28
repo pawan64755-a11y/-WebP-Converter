@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Fact Card Maker</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #121212;
+    font-family: -apple-system, Roboto, 'Segoe UI', sans-serif;
+    color: #fff;
+    min-height: 100%;
+  }
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 14px;
+    padding-bottom: 40px;
+  }
+  h1 {
+    font-size: 18px;
+    text-align: center;
+    margin: 4px 0 14px;
+    font-weight: 600;
+    color: #eee;
+  }
+  .canvas-container {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+    width: 50%;
+    margin: 0 auto;
+    aspect-ratio: 4 / 5;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    touch-action: none;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+  }
+  canvas#card {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .placeholder-btn {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 14px;
+    pointer-events: none;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .title-placeholder-hint {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 234, 0, 0.38);
+    font-family: Impact, 'Arial Narrow Bold', sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    text-align: center;
+    padding: 0 16px;
+  }
+  .divider {
+    position: absolute;
+    left: 0; right: 0;
+    height: 32px;
+    margin-top: -16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ns-resize;
+    z-index: 5;
+  }
+  .divider .bar {
+    width: 50px;
+    height: 6px;
+    background: #4CAF50;
+    border-radius: 3px;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
+  }
+  .divider.title-divider .bar {
+    background: #FFD700;
+  }
+  .controls {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .row { display: flex; gap: 10px; }
+  button {
+    flex: 1;
+    background: #2b2b2b;
+    color: #fff;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 14px 10px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  button:active { background: #3a3a3a; }
+  button.primary { background: #4CAF50; border-color: #4CAF50; }
+  button.primary:active { background: #43a047; }
+  textarea {
+    width: 100%;
+    background: #1c1c1c;
+    color: #fff;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 15px;
+    resize: none;
+    min-height: 80px;
+  }
+  label.small {
+    font-size: 13px;
+    color: #aaa;
+    display: flex;
+    justify-content: space-between;
+  }
+  input[type=range] { width: 100%; }
+  .color-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .swatch {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid #555;
+  }
+  .swatch.selected { border-color: #4CAF50; border-width: 3px; }
+  #fileInput { display: none; }
+  .hint {
+    font-size: 12px;
+    color: #777;
+    text-align: center;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fact Card Maker</h1>
+
+  <div class="canvas-container" id="canvasContainer">
+    <canvas id="card" width="1080" height="1350"></canvas>
+    <div class="placeholder-btn" id="placeholderHint">Neeche button se image select karein</div>
+    <div class="title-placeholder-hint" id="titlePlaceholderHint">Did You Know?</div>
+    <div class="divider title-divider" id="titleDivider"><div class="bar"></div></div>
+    <div class="divider" id="divider"><div class="bar"></div></div>
+  </div>
+  <div class="hint">📌 Image par ungli rakh ke drag karein — position adjust karne ke liye. Crop tight karne ke liye neeche "Zoom" slider use karein</div>
+
+  <div class="controls">
+    <div class="row">
+      <button id="pickImageBtn">📷 Image Select Karein</button>
+      <button id="saveBtn" class="primary">💾 Save Post</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" />
+
+    <div class="row">
+      <button id="shuffleBtn">🔀 Shuffle Text Colors</button>
+    </div>
+
+    <textarea id="titleText" placeholder="Did You Know?"></textarea>
+
+    <label class="small">Title Font Size <span id="titleFontSizeVal">54</span>px
+      <input type="range" id="titleFontSize" min="24" max="100" value="54" />
+    </label>
+
+    <textarea id="factText" placeholder="Yahan apna fact / text likhein...">TEXT_HERE</textarea>
+
+    <label class="small">Font Size <span id="fontSizeVal">44</span>px
+      <input type="range" id="fontSize" min="20" max="90" value="44" />
+    </label>
+
+    <label class="small">Image Zoom / Crop <span id="zoomVal">100</span>%
+      <input type="range" id="zoom" min="100" max="300" value="100" />
+    </label>
+
+    <label class="small">Text Area Background</label>
+    <div class="color-row" id="colorRow">
+      <div class="swatch selected" data-color="#000000" style="background:#000000"></div>
+      <div class="swatch" data-color="#7a1f1f" style="background:#7a1f1f"></div>
+      <div class="swatch" data-color="#1f3d7a" style="background:#1f3d7a"></div>
+      <div class="swatch" data-color="#1f6b3d" style="background:#1f6b3d"></div>
+      <div class="swatch" data-color="#5a1f7a" style="background:#5a1f7a"></div>
+    </div>
+
+    <div class="hint">Save karne par image "Downloads" folder mein save hogi</div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('card');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('canvasContainer');
+  const divider = document.getElementById('divider');
+  const titleDivider = document.getElementById('titleDivider');
+  const placeholderHint = document.getElementById('placeholderHint');
+  const titlePlaceholderHint = document.getElementById('titlePlaceholderHint');
+  const factText = document.getElementById('factText');
+  const titleTextInput = document.getElementById('titleText');
+  const fontSizeInput = document.getElementById('fontSize');
+  const fontSizeVal = document.getElementById('fontSizeVal');
+  const titleFontSizeInput = document.getElementById('titleFontSize');
+  const titleFontSizeVal = document.getElementById('titleFontSizeVal');
+  const zoomInput = document.getElementById('zoom');
+  const zoomVal = document.getElementById('zoomVal');
+  const colorRow = document.getElementById('colorRow');
+  const fileInput = document.getElementById('fileInput');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+
+  const SIZE_W = 1080;
+  const SIZE_H = 1350; // 4:5 aspect ratio
+
+  let state = {
+    image: null,
+    titleRatio: 0.14,   // fraction of full card height used by the title strip
+    splitRatio: 0.62,   // fraction of the remaining (below title) height used by the image
+    fontSize: 44,
+    titleFontSize: 54,
+    titleText: titleTextInput.value,
+    bgColor: '#000000',
+    text: factText.value,
+    zoom: 1,          // 1 = fully fit (no extra crop), higher = zoomed in / more cropped
+    centerX: null,    // center point of the crop window, in source-image pixels
+    centerY: null,
+    cropW: null,      // last computed crop window size (used by drag handler for scaling)
+    cropH: null,
+    colorPalette: ['#FFD54F', '#FF5252', '#4FC3F7', '#66BB6A', '#FF6EC7', '#BA68C8']
+    // ^ current multi-color combination for colored words (cycled through in order, shuffle changes it)
+  };
+
+  // ---- Shuffle: pool of vibrant colors to build fresh random combinations from ----
+  const ACCENT_POOL = [
+    '#FFD54F', '#FF5252', '#4FC3F7', '#66BB6A', '#FF6EC7',
+    '#BA68C8', '#FFA726', '#26C6DA', '#EF5350', '#7E57C2',
+    '#9CCC65', '#FFCA28', '#42A5F5', '#EC407A', '#26A69A',
+    '#FF7043', '#5C6BC0', '#D4E157', '#8D6E63', '#29B6F6'
+  ];
+  const COMBO_SIZE = 6; // how many distinct colors appear per combination
+
+  function randomCombo() {
+    const pool = [...ACCENT_POOL];
+    const combo = [];
+    for (let i = 0; i < COMBO_SIZE && pool.length; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      combo.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+    return combo;
+  }
+
+  // ---- Automatic focus-word coloring (advanced rule-based classifier) ----
+  const COLORS = {
+    number:    '#FFD54F', // amber - numbers, quantities, units
+    danger:    '#FF5252', // red - danger/threat/predator words
+    time:      '#BA68C8', // purple - time/age/era words
+    highlight: '#4FC3F7', // cyan - superlatives / "only", "first", etc.
+    wonder:    '#FF6EC7', // pink - amazing/unusual/surprising words
+    subject:   '#66BB6A', // green - proper nouns / the fact's subject
+    normal:    '#ffffff'
+  };
+
+  const DANGER_WORDS = new Set([
+    'poisonous','poison','toxic','toxins','toxin','deadly','dangerous','lethal',
+    'venomous','venom','kill','killer','kills','killed','extinct','endangered',
+    'danger','fatal','deathly','predator','predators','prey','attack','attacks',
+    'sting','stings','bite','bites','fangs','claws','threat','threatened','hunt',
+    'hunts','hunted','aggressive','vicious','carnivore','carnivorous','warning',
+    'harmful','hazard','hazardous','infected','disease','virus','venomously'
+  ]);
+
+  const TIME_WORDS = new Set([
+    'ancient','prehistoric','million','millions','billion','billions','century',
+    'centuries','decade','decades','era','eras','fossil','fossils','extinction',
+    'evolved','evolution','years','year','decade','millennia','millennium',
+    'modern','historic','historical','dinosaur','dinosaurs','origin','originated'
+  ]);
+
+  const HIGHLIGHT_WORDS = new Set([
+    'first','only','largest','smallest','biggest','tallest','fastest','rarest',
+    'rare','unique','oldest','newest','record','never','always','every','most',
+    'least','strongest','heaviest','lightest','highest','lowest','longest',
+    'shortest','deepest','loudest','quietest','sole','single','exclusively',
+    'solely','uniquely'
+  ]);
+
+  const WONDER_WORDS = new Set([
+    'amazing','incredible','surprising','surprisingly','unusual','fascinating',
+    'remarkable','extraordinary','unbelievable','mysterious','magical','weird',
+    'bizarre','strange','astonishing','stunning','curious','peculiar','odd',
+    'shocking','wonderful','fascinatingly','oddly','interestingly','notably',
+    'impressive','marvel','marvelous','spectacular'
+  ]);
+
+  const QUANTITY_WORDS = new Set([
+    'many','few','dozens','hundreds','thousands','several','multiple','some',
+    'numerous','countless','majority','minority','half','quarter','double',
+    'triple','times','percent','percentage'
+  ]);
+
+  const UNIT_WORDS = new Set([
+    'kg','km','cm','mm','mph','kmh','lbs','lb','ft','feet','inch','inches',
+    'meter','meters','metre','metres','mile','miles','ton','tons','tonne',
+    'tonnes','gram','grams','kilogram','kilograms','celsius','fahrenheit',
+    'litre','litres','liter','liters','gallon','gallons','hz','watt','watts'
+  ]);
+
+  // words that end in "est" but are NOT superlatives (avoid false positives)
+  // Pronouns are never colored and never counted in the alternate white/color pattern
+  const PRONOUNS = new Set([
+    'i','you','he','she','it','we','they','me','him','her','us','them',
+    'my','your','his','her','its','our','their','mine','yours','hers','ours','theirs',
+    'myself','yourself','himself','herself','itself','ourselves','yourselves','themselves',
+    'who','whom','whose','which','what','whoever','whomever','whichever','whatever',
+    'anyone','anybody','anything','someone','somebody','something','no one','nobody','nothing',
+    'each','either','neither','one','another','other','others','few','many','several',
+    'all','both','some','any','none'
+  ]);
+
+  const EST_EXCLUSIONS = new Set([
+    'chest','forest','interest','request','protest','honest','modest','arrest',
+    'quest','west','rest','test','best','vest','crest','wrest','conquest',
+    'contest','digest','harvest','invest','manifest','zest'
+  ]);
+
+  function stripPunct(w) {
+    return w.replace(/^[^\w]+|[^\w]+$/g, '');
+  }
+
+  function isSuperlative(lower) {
+    if (lower.length < 5) return false;
+    if (!lower.endsWith('est')) return false;
+    if (EST_EXCLUSIONS.has(lower)) return false;
+    return true;
+  }
+
+  function isPronoun(word) {
+    const clean = stripPunct(word).toLowerCase();
+    return PRONOUNS.has(clean);
+  }
+
+  function buildTokens(text) {
+    let colorCounter = 0;   // only incremented for non-pronoun words (white/color pattern)
+    let paletteIndex = 0;   // only incremented when a word actually gets colored
+    return text.split(/\s+/).filter(Boolean).map((w) => {
+      if (isPronoun(w)) {
+        return { text: w, color: COLORS.normal };
+      }
+      // even count -> white, odd count -> next color from the palette
+      if (colorCounter % 2 === 0) {
+        colorCounter++;
+        return { text: w, color: COLORS.normal };
+      }
+      const palette = state.colorPalette;
+      const color = palette[paletteIndex % palette.length];
+      paletteIndex++;
+      colorCounter++;
+      return { text: w, color };
+    });
+  }
+
+  function wrapTokens(context, tokens, maxWidth) {
+    const spaceWidth = context.measureText(' ').width;
+    const lines = [];
+    let currentLine = [];
+    let currentWidth = 0;
+    tokens.forEach(tok => {
+      const w = context.measureText(tok.text).width;
+      const addWidth = currentLine.length ? spaceWidth + w : w;
+      if (currentWidth + addWidth > maxWidth && currentLine.length) {
+        lines.push(currentLine);
+        currentLine = [{ ...tok, width: w }];
+        currentWidth = w;
+      } else {
+        currentLine.push({ ...tok, width: w });
+        currentWidth += addWidth;
+      }
+    });
+    if (currentLine.length) lines.push(currentLine);
+    return lines;
+  }
+
+  function drawCard() {
+    ctx.clearRect(0, 0, SIZE_W, SIZE_H);
+
+    // ---- Layout: Title strip (top) -> Image area -> Fact text area (bottom) ----
+    const titleH = Math.round(SIZE_H * state.titleRatio);
+    const remainingH = SIZE_H - titleH;
+    const imageH = Math.round(remainingH * state.splitRatio);
+    const imageY = titleH;
+    const textY = titleH + imageH;
+    const textH = SIZE_H - textY;
+
+    // ---- Title area: black background, bright yellow Impact bold text ----
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, SIZE_W, titleH);
+
+    if (state.titleText && state.titleText.trim()) {
+      const titlePaddingX = 50;
+      const titleMaxWidth = SIZE_W - titlePaddingX * 2;
+      ctx.font = `900 ${state.titleFontSize}px Impact, 'Arial Narrow Bold', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#FFEA00';
+
+      // simple word-wrap for the title within its strip
+      const words = state.titleText.trim().split(/\s+/);
+      const titleLines = [];
+      let cur = '';
+      words.forEach(w => {
+        const test = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(test).width > titleMaxWidth && cur) {
+          titleLines.push(cur);
+          cur = w;
+        } else {
+          cur = test;
+        }
+      });
+      if (cur) titleLines.push(cur);
+
+      const titleLineHeight = state.titleFontSize * 1.15;
+      const titleTotalH = titleLines.length * titleLineHeight;
+      let titleStartY = titleH / 2 - titleTotalH / 2 + titleLineHeight / 2;
+      titleLines.forEach((line, i) => {
+        ctx.fillText(line, SIZE_W / 2, titleStartY + i * titleLineHeight);
+      });
+    }
+
+    // ---- Image area ----
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, imageY, SIZE_W, imageH);
+
+    if (state.image) {
+      const img = state.image;
+      const targetW = SIZE_W, targetH = imageH;
+      const targetRatio = targetW / targetH;
+      const imgRatio = img.width / img.height;
+
+      // base "fit" crop size at zoom = 1 (covers the target box exactly, no extra crop)
+      let baseW, baseH;
+      if (imgRatio > targetRatio) { baseH = img.height; baseW = baseH * targetRatio; }
+      else { baseW = img.width; baseH = baseW / targetRatio; }
+
+      const cropW = baseW / state.zoom;
+      const cropH = baseH / state.zoom;
+
+      // clamp the center point so the crop window never goes outside the image
+      state.centerX = Math.max(cropW / 2, Math.min(state.centerX, img.width - cropW / 2));
+      state.centerY = Math.max(cropH / 2, Math.min(state.centerY, img.height - cropH / 2));
+
+      const cropX = state.centerX - cropW / 2;
+      const cropY = state.centerY - cropH / 2;
+
+      state.cropW = cropW;
+      state.cropH = cropH;
+
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, imageY, targetW, targetH);
+    }
+
+    // ---- Watermark: "Tathya360" top-right corner of the image area ----
+    ctx.font = '700 32px "Segoe UI", Roboto, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(230,230,230,0.92)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Tathya360', SIZE_W - 40, imageY + 36);
+
+    // ---- Fact text area ----
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, textY, SIZE_W, textH);
+
+    const paddingX = 60;
+    const maxWidth = SIZE_W - paddingX * 2;
+    ctx.font = `600 ${state.fontSize}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const spaceWidth = ctx.measureText(' ').width;
+    const tokens = buildTokens(state.text || '');
+    const lines = wrapTokens(ctx, tokens, maxWidth);
+    const lineHeight = state.fontSize * 1.3;
+    const totalTextHeight = lines.length * lineHeight;
+    const textAreaCenterY = textY + textH / 2;
+    let startY = textAreaCenterY - totalTextHeight / 2 + lineHeight / 2;
+
+    lines.forEach((line, i) => {
+      const lineWidth = line.reduce((sum, t, idx) => sum + t.width + (idx > 0 ? spaceWidth : 0), 0);
+      let x = SIZE_W / 2 - lineWidth / 2;
+      const y = startY + i * lineHeight;
+      line.forEach(tok => {
+        ctx.fillStyle = tok.color;
+        ctx.fillText(tok.text, x, y);
+        x += tok.width + spaceWidth;
+      });
+    });
+
+    const displayRatio = container.clientHeight / SIZE_H;
+    titleDivider.style.top = (titleH * displayRatio) + 'px';
+    divider.style.top = (textY * displayRatio) + 'px';
+    placeholderHint.style.display = state.image ? 'none' : 'flex';
+    placeholderHint.style.top = (titleH * displayRatio) + 'px';
+    placeholderHint.style.height = (imageH * displayRatio) + 'px';
+
+    const titleIsEmpty = !state.titleText || !state.titleText.trim();
+    titlePlaceholderHint.style.display = titleIsEmpty ? 'flex' : 'none';
+    titlePlaceholderHint.style.height = (titleH * displayRatio) + 'px';
+    titlePlaceholderHint.style.fontSize = Math.max(14, state.titleFontSize * displayRatio * 0.85) + 'px';
+  }
+
+  let dragging = false;
+  let titleDragging = false;
+
+  // Divider between image and text area: ratio is a fraction of the space
+  // remaining below the title strip.
+  function splitRatioFromClientY(clientY) {
+    const rect = container.getBoundingClientRect();
+    const titleFrac = state.titleRatio;
+    const yFrac = (clientY - rect.top) / rect.height; // fraction of full card height
+    const remainingFrac = 1 - titleFrac;
+    let ratio = (yFrac - titleFrac) / remainingFrac;
+    return Math.max(0.2, Math.min(0.85, ratio));
+  }
+
+  // Divider between title strip and image area: ratio is a fraction of the
+  // full card height.
+  function titleRatioFromClientY(clientY) {
+    const rect = container.getBoundingClientRect();
+    let ratio = (clientY - rect.top) / rect.height;
+    return Math.max(0.08, Math.min(0.35, ratio));
+  }
+
+  divider.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    divider.setPointerCapture(e.pointerId);
+  });
+  divider.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    state.splitRatio = splitRatioFromClientY(e.clientY);
+    drawCard();
+  });
+  divider.addEventListener('pointerup', () => { dragging = false; });
+  divider.addEventListener('pointercancel', () => { dragging = false; });
+
+  titleDivider.addEventListener('pointerdown', (e) => {
+    titleDragging = true;
+    titleDivider.setPointerCapture(e.pointerId);
+  });
+  titleDivider.addEventListener('pointermove', (e) => {
+    if (!titleDragging) return;
+    state.titleRatio = titleRatioFromClientY(e.clientY);
+    drawCard();
+  });
+  titleDivider.addEventListener('pointerup', () => { titleDragging = false; });
+  titleDivider.addEventListener('pointercancel', () => { titleDragging = false; });
+
+  // ---- Move/reposition the image by dragging it ----
+  let imgDragging = false;
+  let lastX = 0, lastY = 0;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!state.image) return;
+    const rect = container.getBoundingClientRect();
+    const titleYDisplay = rect.top + rect.height * state.titleRatio;
+    const splitYDisplay = rect.top + rect.height * (state.titleRatio + (1 - state.titleRatio) * state.splitRatio);
+    if (e.clientY < titleYDisplay || e.clientY >= splitYDisplay) return; // only drag within the image area
+    imgDragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!imgDragging || !state.image) return;
+    const rect = container.getBoundingClientRect();
+    const dxDisplay = e.clientX - lastX;
+    const dyDisplay = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    // convert display-pixel movement to source-image-pixel movement
+    const displayImageHeight = rect.height * (1 - state.titleRatio) * state.splitRatio;
+    const scaleFactorX = state.cropW / rect.width;
+    const scaleFactorY = state.cropH / displayImageHeight;
+
+    state.centerX -= dxDisplay * scaleFactorX;
+    state.centerY -= dyDisplay * scaleFactorY;
+
+    drawCard();
+  });
+
+  canvas.addEventListener('pointerup', (e) => {
+    imgDragging = false;
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+  });
+  canvas.addEventListener('pointercancel', () => { imgDragging = false; });
+
+  document.getElementById('pickImageBtn').addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        state.image = img;
+        state.zoom = 1;
+        state.centerX = img.width / 2;
+        state.centerY = img.height / 2;
+        zoomInput.value = 100;
+        zoomVal.textContent = 100;
+        drawCard();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  factText.addEventListener('input', () => { state.text = factText.value; drawCard(); });
+  fontSizeInput.addEventListener('input', () => {
+    state.fontSize = parseInt(fontSizeInput.value, 10);
+    fontSizeVal.textContent = state.fontSize;
+    drawCard();
+  });
+  titleTextInput.addEventListener('input', () => { state.titleText = titleTextInput.value; drawCard(); });
+  titleFontSizeInput.addEventListener('input', () => {
+    state.titleFontSize = parseInt(titleFontSizeInput.value, 10);
+    titleFontSizeVal.textContent = state.titleFontSize;
+    drawCard();
+  });
+  zoomInput.addEventListener('input', () => {
+    state.zoom = parseInt(zoomInput.value, 10) / 100;
+    zoomVal.textContent = zoomInput.value;
+    drawCard();
+  });
+  colorRow.addEventListener('click', (e) => {
+    const sw = e.target.closest('.swatch');
+    if (!sw) return;
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    sw.classList.add('selected');
+    state.bgColor = sw.dataset.color;
+    drawCard();
+  });
+
+  shuffleBtn.addEventListener('click', () => {
+    state.colorPalette = randomCombo();
+    drawCard();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'FactCard_' + Date.now() + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }, 'image/png');
+  });
+
+  window.addEventListener('resize', drawCard);
+  window.addEventListener('load', drawCard);
+  drawCard();
+</script>
+</body>
+</html>
