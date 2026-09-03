@@ -311,13 +311,13 @@
       ctx.fillText(labelText, labelX + labelPadX, labelY + labelPadY);
     }
 
-    // ---- Watermark: "CricWire" top-right corner of the image area ----
+    // ---- Watermark: "CricRift" top-right corner of the image area ----
     ctx.font = '700 32px "Segoe UI", Roboto, -apple-system, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     const wmRingText = 'Cric';
-    const wmRiftText = 'Wire';
+    const wmRiftText = 'Rift';
     const wmRingWidth = ctx.measureText(wmRingText).width;
     const wmRiftWidth = ctx.measureText(wmRiftText).width;
     const wmTotalWidth = wmRingWidth + wmRiftWidth;
@@ -334,7 +334,7 @@
     ctx.fillStyle = '#ffffff';
     ctx.fillText(wmRingText, wmStartX, wmTopY);
 
-    ctx.fillStyle = '#ff0000';
+    ctx.fillStyle = '#1e88e5';
     ctx.fillText(wmRiftText, wmStartX + wmRingWidth, wmTopY);
 
     // ---- Source credit line: bottom edge of the image, just above the divider ----
