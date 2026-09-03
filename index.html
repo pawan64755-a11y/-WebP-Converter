@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<title>Fact Card Maker</title>
+<title>Cricket Fact Card Maker</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -31,17 +31,14 @@
     color: #eee;
   }
   .canvas-container {
-    position: sticky;
-    top: 8px;
-    z-index: 20;
-    width: 50%;
-    margin: 0 auto;
-    aspect-ratio: 4 / 5;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
     background: #000;
     border-radius: 10px;
     overflow: hidden;
     touch-action: none;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
   }
   canvas#card {
     width: 100%;
@@ -60,20 +57,6 @@
     text-align: center;
     padding: 0 20px;
   }
-  .title-placeholder-hint {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 234, 0, 0.38);
-    font-family: Impact, 'Arial Narrow Bold', sans-serif;
-    font-weight: 900;
-    letter-spacing: 0.5px;
-    pointer-events: none;
-    text-align: center;
-    padding: 0 16px;
-  }
   .divider {
     position: absolute;
     left: 0; right: 0;
@@ -91,9 +74,6 @@
     background: #4CAF50;
     border-radius: 3px;
     box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
-  }
-  .divider.title-divider .bar {
-    background: #FFD700;
   }
   .controls {
     margin-top: 18px;
@@ -133,13 +113,6 @@
     justify-content: space-between;
   }
   input[type=range] { width: 100%; }
-  .color-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .swatch {
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    border: 2px solid #555;
-  }
-  .swatch.selected { border-color: #4CAF50; border-width: 3px; }
   #fileInput { display: none; }
   .hint {
     font-size: 12px;
@@ -151,13 +124,11 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Fact Card Maker</h1>
+  <h1>🏏 Cricket Fact Card Maker</h1>
 
   <div class="canvas-container" id="canvasContainer">
-    <canvas id="card" width="1080" height="1350"></canvas>
+    <canvas id="card" width="1080" height="1080"></canvas>
     <div class="placeholder-btn" id="placeholderHint">Neeche button se image select karein</div>
-    <div class="title-placeholder-hint" id="titlePlaceholderHint">Did You Know?</div>
-    <div class="divider title-divider" id="titleDivider"><div class="bar"></div></div>
     <div class="divider" id="divider"><div class="bar"></div></div>
   </div>
   <div class="hint">📌 Image par ungli rakh ke drag karein — position adjust karne ke liye. Crop tight karne ke liye neeche "Zoom" slider use karein</div>
@@ -169,17 +140,7 @@
     </div>
     <input type="file" id="fileInput" accept="image/*" />
 
-    <div class="row">
-      <button id="shuffleBtn">🔀 Shuffle Text Colors</button>
-    </div>
-
-    <textarea id="titleText" placeholder="Did You Know?"></textarea>
-
-    <label class="small">Title Font Size <span id="titleFontSizeVal">54</span>px
-      <input type="range" id="titleFontSize" min="24" max="100" value="54" />
-    </label>
-
-    <textarea id="factText" placeholder="Yahan apna fact / text likhein...">TEXT_HERE</textarea>
+    <textarea id="factText" placeholder="Yahan apna cricket fact / text likhein...">🔴 [CONFIRMED NEWS] Rohit Sharma ruled out of next Test with hamstring injury (ESPNcricinfo)</textarea>
 
     <label class="small">Font Size <span id="fontSizeVal">44</span>px
       <input type="range" id="fontSize" min="20" max="90" value="44" />
@@ -188,15 +149,6 @@
     <label class="small">Image Zoom / Crop <span id="zoomVal">100</span>%
       <input type="range" id="zoom" min="100" max="300" value="100" />
     </label>
-
-    <label class="small">Text Area Background</label>
-    <div class="color-row" id="colorRow">
-      <div class="swatch selected" data-color="#000000" style="background:#000000"></div>
-      <div class="swatch" data-color="#7a1f1f" style="background:#7a1f1f"></div>
-      <div class="swatch" data-color="#1f3d7a" style="background:#1f3d7a"></div>
-      <div class="swatch" data-color="#1f6b3d" style="background:#1f6b3d"></div>
-      <div class="swatch" data-color="#5a1f7a" style="background:#5a1f7a"></div>
-    </div>
 
     <div class="hint">Save karne par image "Downloads" folder mein save hogi</div>
   </div>
@@ -207,170 +159,76 @@
   const ctx = canvas.getContext('2d');
   const container = document.getElementById('canvasContainer');
   const divider = document.getElementById('divider');
-  const titleDivider = document.getElementById('titleDivider');
   const placeholderHint = document.getElementById('placeholderHint');
-  const titlePlaceholderHint = document.getElementById('titlePlaceholderHint');
   const factText = document.getElementById('factText');
-  const titleTextInput = document.getElementById('titleText');
   const fontSizeInput = document.getElementById('fontSize');
   const fontSizeVal = document.getElementById('fontSizeVal');
-  const titleFontSizeInput = document.getElementById('titleFontSize');
-  const titleFontSizeVal = document.getElementById('titleFontSizeVal');
   const zoomInput = document.getElementById('zoom');
   const zoomVal = document.getElementById('zoomVal');
-  const colorRow = document.getElementById('colorRow');
   const fileInput = document.getElementById('fileInput');
-  const shuffleBtn = document.getElementById('shuffleBtn');
 
-  const SIZE_W = 1080;
-  const SIZE_H = 1350; // 4:5 aspect ratio
+  const SIZE = 1080;
 
   let state = {
     image: null,
-    titleRatio: 0.14,   // fraction of full card height used by the title strip
-    splitRatio: 0.62,   // fraction of the remaining (below title) height used by the image
+    splitRatio: 0.62,
     fontSize: 44,
-    titleFontSize: 54,
-    titleText: titleTextInput.value,
     bgColor: '#000000',
     text: factText.value,
     zoom: 1,          // 1 = fully fit (no extra crop), higher = zoomed in / more cropped
     centerX: null,    // center point of the crop window, in source-image pixels
     centerY: null,
     cropW: null,      // last computed crop window size (used by drag handler for scaling)
-    cropH: null,
-    colorPalette: ['#FFD54F', '#FF5252', '#4FC3F7', '#66BB6A', '#FF6EC7', '#BA68C8']
-    // ^ current multi-color combination for colored words (cycled through in order, shuffle changes it)
+    cropH: null
   };
 
-  // ---- Shuffle: pool of vibrant colors to build fresh random combinations from ----
-  const ACCENT_POOL = [
-    '#FFD54F', '#FF5252', '#4FC3F7', '#66BB6A', '#FF6EC7',
-    '#BA68C8', '#FFA726', '#26C6DA', '#EF5350', '#7E57C2',
-    '#9CCC65', '#FFCA28', '#42A5F5', '#EC407A', '#26A69A',
-    '#FF7043', '#5C6BC0', '#D4E157', '#8D6E63', '#29B6F6'
-  ];
-  const COMBO_SIZE = 6; // how many distinct colors appear per combination
-
-  function randomCombo() {
-    const pool = [...ACCENT_POOL];
-    const combo = [];
-    for (let i = 0; i < COMBO_SIZE && pool.length; i++) {
-      const idx = Math.floor(Math.random() * pool.length);
-      combo.push(pool[idx]);
-      pool.splice(idx, 1);
-    }
-    return combo;
-  }
-
-  // ---- Automatic focus-word coloring (advanced rule-based classifier) ----
-  const COLORS = {
-    number:    '#FFD54F', // amber - numbers, quantities, units
-    danger:    '#FF5252', // red - danger/threat/predator words
-    time:      '#BA68C8', // purple - time/age/era words
-    highlight: '#4FC3F7', // cyan - superlatives / "only", "first", etc.
-    wonder:    '#FF6EC7', // pink - amazing/unusual/surprising words
-    subject:   '#66BB6A', // green - proper nouns / the fact's subject
-    normal:    '#ffffff'
-  };
-
-  const DANGER_WORDS = new Set([
-    'poisonous','poison','toxic','toxins','toxin','deadly','dangerous','lethal',
-    'venomous','venom','kill','killer','kills','killed','extinct','endangered',
-    'danger','fatal','deathly','predator','predators','prey','attack','attacks',
-    'sting','stings','bite','bites','fangs','claws','threat','threatened','hunt',
-    'hunts','hunted','aggressive','vicious','carnivore','carnivorous','warning',
-    'harmful','hazard','hazardous','infected','disease','virus','venomously'
-  ]);
-
-  const TIME_WORDS = new Set([
-    'ancient','prehistoric','million','millions','billion','billions','century',
-    'centuries','decade','decades','era','eras','fossil','fossils','extinction',
-    'evolved','evolution','years','year','decade','millennia','millennium',
-    'modern','historic','historical','dinosaur','dinosaurs','origin','originated'
-  ]);
-
-  const HIGHLIGHT_WORDS = new Set([
-    'first','only','largest','smallest','biggest','tallest','fastest','rarest',
-    'rare','unique','oldest','newest','record','never','always','every','most',
-    'least','strongest','heaviest','lightest','highest','lowest','longest',
-    'shortest','deepest','loudest','quietest','sole','single','exclusively',
-    'solely','uniquely'
-  ]);
-
-  const WONDER_WORDS = new Set([
-    'amazing','incredible','surprising','surprisingly','unusual','fascinating',
-    'remarkable','extraordinary','unbelievable','mysterious','magical','weird',
-    'bizarre','strange','astonishing','stunning','curious','peculiar','odd',
-    'shocking','wonderful','fascinatingly','oddly','interestingly','notably',
-    'impressive','marvel','marvelous','spectacular'
-  ]);
-
-  const QUANTITY_WORDS = new Set([
-    'many','few','dozens','hundreds','thousands','several','multiple','some',
-    'numerous','countless','majority','minority','half','quarter','double',
-    'triple','times','percent','percentage'
-  ]);
-
-  const UNIT_WORDS = new Set([
-    'kg','km','cm','mm','mph','kmh','lbs','lb','ft','feet','inch','inches',
-    'meter','meters','metre','metres','mile','miles','ton','tons','tonne',
-    'tonnes','gram','grams','kilogram','kilograms','celsius','fahrenheit',
-    'litre','litres','liter','liters','gallon','gallons','hz','watt','watts'
-  ]);
-
-  // words that end in "est" but are NOT superlatives (avoid false positives)
-  // Pronouns are never colored and never counted in the alternate white/color pattern
-  const PRONOUNS = new Set([
-    'i','you','he','she','it','we','they','me','him','her','us','them',
-    'my','your','his','her','its','our','their','mine','yours','hers','ours','theirs',
-    'myself','yourself','himself','herself','itself','ourselves','yourselves','themselves',
-    'who','whom','whose','which','what','whoever','whomever','whichever','whatever',
-    'anyone','anybody','anything','someone','somebody','something','no one','nobody','nothing',
-    'each','either','neither','one','another','other','others','few','many','several',
-    'all','both','some','any','none'
-  ]);
-
-  const EST_EXCLUSIONS = new Set([
-    'chest','forest','interest','request','protest','honest','modest','arrest',
-    'quest','west','rest','test','best','vest','crest','wrest','conquest',
-    'contest','digest','harvest','invest','manifest','zest'
-  ]);
-
-  function stripPunct(w) {
-    return w.replace(/^[^\w]+|[^\w]+$/g, '');
-  }
-
-  function isSuperlative(lower) {
-    if (lower.length < 5) return false;
-    if (!lower.endsWith('est')) return false;
-    if (EST_EXCLUSIONS.has(lower)) return false;
-    return true;
-  }
-
-  function isPronoun(word) {
-    const clean = stripPunct(word).toLowerCase();
-    return PRONOUNS.has(clean);
-  }
+  // Text is always rendered in a single plain color (no multi-color word highlighting)
+  const TEXT_COLOR = '#ffffff';
 
   function buildTokens(text) {
-    let colorCounter = 0;   // only incremented for non-pronoun words (white/color pattern)
-    let paletteIndex = 0;   // only incremented when a word actually gets colored
-    return text.split(/\s+/).filter(Boolean).map((w) => {
-      if (isPronoun(w)) {
-        return { text: w, color: COLORS.normal };
-      }
-      // even count -> white, odd count -> next color from the palette
-      if (colorCounter % 2 === 0) {
-        colorCounter++;
-        return { text: w, color: COLORS.normal };
-      }
-      const palette = state.colorPalette;
-      const color = palette[paletteIndex % palette.length];
-      paletteIndex++;
-      colorCounter++;
-      return { text: w, color };
-    });
+    return text.split(/\s+/).filter(Boolean).map((w) => ({ text: w, color: TEXT_COLOR }));
+  }
+
+  // ---- Parse special markers from the fact text ----
+  // 1) A leading emoji + [LABEL] tag, e.g. "🔴 [CONFIRMED NEWS] ..." -> shown as a
+  //    colored badge in the top-left corner of the image.
+  // 2) A trailing "(...)" e.g. "(ESPNcricinfo)" -> shown as a small source credit line
+  //    at the bottom edge of the image, just above the divider.
+  const LABEL_COLORS = {
+    '\u{1F534}': { bg: '#e53935', text: '#ffffff' }, // 🔴 red
+    '\u{1F535}': { bg: '#1e88e5', text: '#ffffff' }, // 🔵 blue
+    '\u{1F7E2}': { bg: '#43a047', text: '#ffffff' }, // 🟢 green
+    '\u{1F7E1}': { bg: '#fdd835', text: '#1a1a1a' }, // 🟡 yellow
+    '\u{1F7E0}': { bg: '#fb8c00', text: '#ffffff' }, // 🟠 orange
+    '\u{1F7E3}': { bg: '#8e24aa', text: '#ffffff' }, // 🟣 purple
+    '\u26AB': { bg: '#2b2b2b', text: '#ffffff' },     // ⚫ black
+    '\u26AA': { bg: '#e0e0e0', text: '#1a1a1a' }      // ⚪ white
+  };
+
+  function parseFactText(raw) {
+    let text = (raw || '').trim();
+    let label = null;
+    let labelColor = { bg: '#2b2b2b', text: '#ffffff' };
+    let source = null;
+
+    // Leading "<emoji> [LABEL]" pattern
+    const labelMatch = text.match(/^([\u{1F534}\u{1F535}\u{1F7E2}\u{1F7E1}\u{1F7E0}\u{1F7E3}\u26AB\u26AA])\s*\[([^\]]+)\]\s*/u);
+    if (labelMatch) {
+      label = labelMatch[2].trim();
+      if (LABEL_COLORS[labelMatch[1]]) labelColor = LABEL_COLORS[labelMatch[1]];
+      text = text.slice(labelMatch[0].length).trim();
+    }
+
+    // Trailing "(...)" pattern -> source credit
+    const sourceMatch = text.match(/\(([^()]+)\)\s*$/);
+    if (sourceMatch) {
+      source = sourceMatch[1].trim();
+      text = text.slice(0, sourceMatch.index).trim();
+      // clean up a dangling dash/em-dash left before the removed source
+      text = text.replace(/[\u2013\u2014\-]\s*$/, '').trim();
+    }
+
+    return { body: text, label, labelColor, source };
   }
 
   function wrapTokens(context, tokens, maxWidth) {
@@ -395,58 +253,15 @@
   }
 
   function drawCard() {
-    ctx.clearRect(0, 0, SIZE_W, SIZE_H);
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    const splitY = Math.round(SIZE * state.splitRatio);
 
-    // ---- Layout: Title strip (top) -> Image area -> Fact text area (bottom) ----
-    const titleH = Math.round(SIZE_H * state.titleRatio);
-    const remainingH = SIZE_H - titleH;
-    const imageH = Math.round(remainingH * state.splitRatio);
-    const imageY = titleH;
-    const textY = titleH + imageH;
-    const textH = SIZE_H - textY;
-
-    // ---- Title area: black background, bright yellow Impact bold text ----
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, SIZE_W, titleH);
-
-    if (state.titleText && state.titleText.trim()) {
-      const titlePaddingX = 50;
-      const titleMaxWidth = SIZE_W - titlePaddingX * 2;
-      ctx.font = `900 ${state.titleFontSize}px Impact, 'Arial Narrow Bold', sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#FFEA00';
-
-      // simple word-wrap for the title within its strip
-      const words = state.titleText.trim().split(/\s+/);
-      const titleLines = [];
-      let cur = '';
-      words.forEach(w => {
-        const test = cur ? cur + ' ' + w : w;
-        if (ctx.measureText(test).width > titleMaxWidth && cur) {
-          titleLines.push(cur);
-          cur = w;
-        } else {
-          cur = test;
-        }
-      });
-      if (cur) titleLines.push(cur);
-
-      const titleLineHeight = state.titleFontSize * 1.15;
-      const titleTotalH = titleLines.length * titleLineHeight;
-      let titleStartY = titleH / 2 - titleTotalH / 2 + titleLineHeight / 2;
-      titleLines.forEach((line, i) => {
-        ctx.fillText(line, SIZE_W / 2, titleStartY + i * titleLineHeight);
-      });
-    }
-
-    // ---- Image area ----
     ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, imageY, SIZE_W, imageH);
+    ctx.fillRect(0, 0, SIZE, splitY);
 
     if (state.image) {
       const img = state.image;
-      const targetW = SIZE_W, targetH = imageH;
+      const targetW = SIZE, targetH = splitY;
       const targetRatio = targetW / targetH;
       const imgRatio = img.width / img.height;
 
@@ -468,37 +283,102 @@
       state.cropW = cropW;
       state.cropH = cropH;
 
-      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, imageY, targetW, targetH);
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
     }
 
-    // ---- Watermark: "Tathya360" top-right corner of the image area ----
-    ctx.font = '700 32px "Segoe UI", Roboto, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(230,230,230,0.92)';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Tathya360', SIZE_W - 40, imageY + 36);
+    // ---- Parse the fact text for a [LABEL] tag and a (source) credit ----
+    const parsed = parseFactText(state.text || '');
 
-    // ---- Fact text area ----
+    // ---- Label badge: top-left corner of the image, solid color box ----
+    if (parsed.label) {
+      ctx.font = '700 30px "Segoe UI", Roboto, -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      const labelText = parsed.label.toUpperCase();
+      const labelPadX = 14;
+      const labelPadY = 8;
+      const labelTextWidth = ctx.measureText(labelText).width;
+      const labelBoxW = labelTextWidth + labelPadX * 2;
+      const labelBoxH = 32 + labelPadY * 2;
+      const labelX = 40;
+      const labelY = 36;
+
+      ctx.fillStyle = parsed.labelColor.bg;
+      ctx.fillRect(labelX, labelY, labelBoxW, labelBoxH);
+
+      ctx.fillStyle = parsed.labelColor.text;
+      ctx.fillText(labelText, labelX + labelPadX, labelY + labelPadY);
+    }
+
+    // ---- Watermark: "CricWire" top-right corner of the image area ----
+    ctx.font = '700 32px "Segoe UI", Roboto, -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    const wmRingText = 'Cric';
+    const wmRiftText = 'Wire';
+    const wmRingWidth = ctx.measureText(wmRingText).width;
+    const wmRiftWidth = ctx.measureText(wmRiftText).width;
+    const wmTotalWidth = wmRingWidth + wmRiftWidth;
+    const wmRightEdge = SIZE - 40;
+    const wmStartX = wmRightEdge - wmTotalWidth;
+    const wmTopY = 36;
+
+    // background box behind watermark text, 66% transparent black (i.e. 34% opaque)
+    const wmPadX = 10;
+    const wmPadY = 6;
+    ctx.fillStyle = 'rgba(0,0,0,0.34)';
+    ctx.fillRect(wmStartX - wmPadX, wmTopY - wmPadY, wmTotalWidth + wmPadX * 2, 32 + wmPadY * 2);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(wmRingText, wmStartX, wmTopY);
+
+    ctx.fillStyle = '#ff0000';
+    ctx.fillText(wmRiftText, wmStartX + wmRingWidth, wmTopY);
+
+    // ---- Source credit line: bottom edge of the image, just above the divider ----
+    if (parsed.source) {
+      ctx.font = 'italic 26px "Segoe UI", Roboto, -apple-system, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+
+      const sourceText = 'Source: ' + parsed.source;
+      const srcPadX = 14;
+      const srcPadY = 8;
+      const srcTextWidth = ctx.measureText(sourceText).width;
+      const srcRightEdge = SIZE - 40;
+      const srcBottomY = splitY - 10;
+      const srcBoxW = srcTextWidth + srcPadX * 2;
+      const srcBoxH = 26 + srcPadY * 2;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(srcRightEdge - srcBoxW, srcBottomY - srcBoxH, srcBoxW, srcBoxH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(sourceText, srcRightEdge - srcPadX, srcBottomY - srcPadY);
+    }
+
     ctx.fillStyle = state.bgColor;
-    ctx.fillRect(0, textY, SIZE_W, textH);
+    ctx.fillRect(0, splitY, SIZE, SIZE - splitY);
 
     const paddingX = 60;
-    const maxWidth = SIZE_W - paddingX * 2;
+    const maxWidth = SIZE - paddingX * 2;
     ctx.font = `600 ${state.fontSize}px sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
     const spaceWidth = ctx.measureText(' ').width;
-    const tokens = buildTokens(state.text || '');
+    const tokens = buildTokens(parsed.body || '');
     const lines = wrapTokens(ctx, tokens, maxWidth);
     const lineHeight = state.fontSize * 1.3;
     const totalTextHeight = lines.length * lineHeight;
-    const textAreaCenterY = textY + textH / 2;
+    const textAreaCenterY = splitY + (SIZE - splitY) / 2;
     let startY = textAreaCenterY - totalTextHeight / 2 + lineHeight / 2;
 
     lines.forEach((line, i) => {
       const lineWidth = line.reduce((sum, t, idx) => sum + t.width + (idx > 0 ? spaceWidth : 0), 0);
-      let x = SIZE_W / 2 - lineWidth / 2;
+      let x = SIZE / 2 - lineWidth / 2;
       const y = startY + i * lineHeight;
       line.forEach(tok => {
         ctx.fillStyle = tok.color;
@@ -507,64 +387,29 @@
       });
     });
 
-    const displayRatio = container.clientHeight / SIZE_H;
-    titleDivider.style.top = (titleH * displayRatio) + 'px';
-    divider.style.top = (textY * displayRatio) + 'px';
+    const displayRatio = container.clientHeight / SIZE;
+    divider.style.top = (splitY * displayRatio) + 'px';
     placeholderHint.style.display = state.image ? 'none' : 'flex';
-    placeholderHint.style.top = (titleH * displayRatio) + 'px';
-    placeholderHint.style.height = (imageH * displayRatio) + 'px';
-
-    const titleIsEmpty = !state.titleText || !state.titleText.trim();
-    titlePlaceholderHint.style.display = titleIsEmpty ? 'flex' : 'none';
-    titlePlaceholderHint.style.height = (titleH * displayRatio) + 'px';
-    titlePlaceholderHint.style.fontSize = Math.max(14, state.titleFontSize * displayRatio * 0.85) + 'px';
+    placeholderHint.style.height = (splitY * displayRatio) + 'px';
   }
 
   let dragging = false;
-  let titleDragging = false;
-
-  // Divider between image and text area: ratio is a fraction of the space
-  // remaining below the title strip.
-  function splitRatioFromClientY(clientY) {
-    const rect = container.getBoundingClientRect();
-    const titleFrac = state.titleRatio;
-    const yFrac = (clientY - rect.top) / rect.height; // fraction of full card height
-    const remainingFrac = 1 - titleFrac;
-    let ratio = (yFrac - titleFrac) / remainingFrac;
-    return Math.max(0.2, Math.min(0.85, ratio));
-  }
-
-  // Divider between title strip and image area: ratio is a fraction of the
-  // full card height.
-  function titleRatioFromClientY(clientY) {
+  function ratioFromClientY(clientY) {
     const rect = container.getBoundingClientRect();
     let ratio = (clientY - rect.top) / rect.height;
-    return Math.max(0.08, Math.min(0.35, ratio));
+    return Math.max(0.2, Math.min(0.85, ratio));
   }
-
   divider.addEventListener('pointerdown', (e) => {
     dragging = true;
     divider.setPointerCapture(e.pointerId);
   });
   divider.addEventListener('pointermove', (e) => {
     if (!dragging) return;
-    state.splitRatio = splitRatioFromClientY(e.clientY);
+    state.splitRatio = ratioFromClientY(e.clientY);
     drawCard();
   });
   divider.addEventListener('pointerup', () => { dragging = false; });
   divider.addEventListener('pointercancel', () => { dragging = false; });
-
-  titleDivider.addEventListener('pointerdown', (e) => {
-    titleDragging = true;
-    titleDivider.setPointerCapture(e.pointerId);
-  });
-  titleDivider.addEventListener('pointermove', (e) => {
-    if (!titleDragging) return;
-    state.titleRatio = titleRatioFromClientY(e.clientY);
-    drawCard();
-  });
-  titleDivider.addEventListener('pointerup', () => { titleDragging = false; });
-  titleDivider.addEventListener('pointercancel', () => { titleDragging = false; });
 
   // ---- Move/reposition the image by dragging it ----
   let imgDragging = false;
@@ -573,9 +418,8 @@
   canvas.addEventListener('pointerdown', (e) => {
     if (!state.image) return;
     const rect = container.getBoundingClientRect();
-    const titleYDisplay = rect.top + rect.height * state.titleRatio;
-    const splitYDisplay = rect.top + rect.height * (state.titleRatio + (1 - state.titleRatio) * state.splitRatio);
-    if (e.clientY < titleYDisplay || e.clientY >= splitYDisplay) return; // only drag within the image area
+    const splitYDisplay = rect.top + rect.height * state.splitRatio;
+    if (e.clientY >= splitYDisplay) return; // only drag within the image area, not the text area
     imgDragging = true;
     lastX = e.clientX;
     lastY = e.clientY;
@@ -591,7 +435,7 @@
     lastY = e.clientY;
 
     // convert display-pixel movement to source-image-pixel movement
-    const displayImageHeight = rect.height * (1 - state.titleRatio) * state.splitRatio;
+    const displayImageHeight = rect.height * state.splitRatio;
     const scaleFactorX = state.cropW / rect.width;
     const scaleFactorY = state.cropH / displayImageHeight;
 
@@ -637,31 +481,11 @@
     fontSizeVal.textContent = state.fontSize;
     drawCard();
   });
-  titleTextInput.addEventListener('input', () => { state.titleText = titleTextInput.value; drawCard(); });
-  titleFontSizeInput.addEventListener('input', () => {
-    state.titleFontSize = parseInt(titleFontSizeInput.value, 10);
-    titleFontSizeVal.textContent = state.titleFontSize;
-    drawCard();
-  });
   zoomInput.addEventListener('input', () => {
     state.zoom = parseInt(zoomInput.value, 10) / 100;
     zoomVal.textContent = zoomInput.value;
     drawCard();
   });
-  colorRow.addEventListener('click', (e) => {
-    const sw = e.target.closest('.swatch');
-    if (!sw) return;
-    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
-    sw.classList.add('selected');
-    state.bgColor = sw.dataset.color;
-    drawCard();
-  });
-
-  shuffleBtn.addEventListener('click', () => {
-    state.colorPalette = randomCombo();
-    drawCard();
-  });
-
   document.getElementById('saveBtn').addEventListener('click', () => {
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
