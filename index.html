@@ -1,507 +1,328 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<title>Cricket Fact Card Maker</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image to WebP Converter (Max 18KB)</title>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0; padding: 0;
-    background: #121212;
-    font-family: -apple-system, Roboto, 'Segoe UI', sans-serif;
-    color: #fff;
-    min-height: 100%;
-  }
-  .wrap {
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    margin: 0;
+    padding: 24px 16px;
     display: flex;
     flex-direction: column;
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 14px;
-    padding-bottom: 40px;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .container {
+    width: 100%;
+    max-width: 520px;
   }
   h1 {
-    font-size: 18px;
+    font-size: 22px;
+    margin-bottom: 4px;
     text-align: center;
-    margin: 4px 0 14px;
-    font-weight: 600;
-    color: #eee;
   }
-  .canvas-container {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background: #000;
-    border-radius: 10px;
-    overflow: hidden;
-    touch-action: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-  }
-  canvas#card {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-  .placeholder-btn {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #888;
+  p.subtitle {
+    text-align: center;
+    color: #94a3b8;
     font-size: 14px;
-    pointer-events: none;
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+  .drop-zone {
+    border: 2px dashed #475569;
+    border-radius: 12px;
+    padding: 32px 16px;
     text-align: center;
-    padding: 0 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #1e293b;
   }
-  .divider {
-    position: absolute;
-    left: 0; right: 0;
-    height: 32px;
-    margin-top: -16px;
+  .drop-zone.dragover {
+    border-color: #38bdf8;
+    background: #1e2b3f;
+  }
+  .drop-zone p { margin: 8px 0 0; color: #94a3b8; font-size: 14px; }
+  input[type=file] { display: none; }
+  .settings {
     display: flex;
+    gap: 12px;
+    margin-top: 16px;
     align-items: center;
-    justify-content: center;
-    cursor: ns-resize;
-    z-index: 5;
   }
-  .divider .bar {
-    width: 50px;
-    height: 6px;
-    background: #4CAF50;
-    border-radius: 3px;
-    box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
-  }
-  .controls {
-    margin-top: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .row { display: flex; gap: 10px; }
-  button {
-    flex: 1;
-    background: #2b2b2b;
-    color: #fff;
-    border: 1px solid #3a3a3a;
-    border-radius: 10px;
-    padding: 14px 10px;
-    font-size: 15px;
-    font-weight: 600;
-  }
-  button:active { background: #3a3a3a; }
-  button.primary { background: #4CAF50; border-color: #4CAF50; }
-  button.primary:active { background: #43a047; }
-  textarea {
-    width: 100%;
-    background: #1c1c1c;
-    color: #fff;
-    border: 1px solid #3a3a3a;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 15px;
-    resize: none;
-    min-height: 80px;
-  }
-  label.small {
+  .settings label {
     font-size: 13px;
-    color: #aaa;
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+  .settings input[type=number] {
+    width: 70px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+  }
+  #status {
+    margin-top: 16px;
+    font-size: 14px;
+    color: #94a3b8;
+    text-align: center;
+    min-height: 20px;
+  }
+  .result {
+    margin-top: 20px;
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 16px;
+    display: none;
+  }
+  .result.show { display: block; }
+  .result img {
+    max-width: 100%;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto 12px;
+  }
+  .info {
     display: flex;
     justify-content: space-between;
+    font-size: 13px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
   }
-  input[type=range] { width: 100%; }
-  #fileInput { display: none; }
-  .hint {
-    font-size: 12px;
-    color: #777;
+  .info b { color: #38bdf8; }
+  .download-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: #38bdf8;
+    color: #0f172a;
     text-align: center;
-    margin-top: 6px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .download-btn:active { opacity: 0.8; }
+  .error {
+    color: #f87171;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 10px;
+  }
+  .list-item {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .list-item img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .list-item .meta {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+  }
+  .list-item .meta .name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .list-item .meta .size { color: #94a3b8; font-size: 12px; }
+  .list-item a {
+    background: #38bdf8;
+    color: #0f172a;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  footer {
+    margin-top: 32px;
+    font-size: 12px;
+    color: #475569;
+    text-align: center;
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>🏏 Cricket Fact Card Maker</h1>
+<div class="container">
+  <h1>Image → WebP Converter</h1>
+  <p class="subtitle">Kisi bhi image ko WebP format mein convert karein, size hamesha target limit ke andar</p>
 
-  <div class="canvas-container" id="canvasContainer">
-    <canvas id="card" width="1080" height="1080"></canvas>
-    <div class="placeholder-btn" id="placeholderHint">Neeche button se image select karein</div>
-    <div class="divider" id="divider"><div class="bar"></div></div>
+  <div class="settings">
+    <label for="targetKb">Max size (KB):</label>
+    <input type="number" id="targetKb" value="18" min="1" max="500">
   </div>
-  <div class="hint">📌 Image par ungli rakh ke drag karein  1�7 position adjust karne ke liye. Crop tight karne ke liye neeche "Zoom" slider use karein</div>
 
-  <div class="controls">
-    <div class="row">
-      <button id="pickImageBtn">📷 Image Select Karein</button>
-      <button id="saveBtn" class="primary">💾 Save Post</button>
-    </div>
-    <input type="file" id="fileInput" accept="image/*" />
-
-    <textarea id="factText" placeholder="Yahan apna cricket fact / text likhein..."></textarea>
-
-    <label class="small">Font Size <span id="fontSizeVal">44</span>px
-      <input type="range" id="fontSize" min="20" max="90" value="44" />
-    </label>
-
-    <label class="small">Image Zoom / Crop <span id="zoomVal">100</span>%
-      <input type="range" id="zoom" min="100" max="300" value="100" />
-    </label>
-
-    <div class="hint">Save karne par image "Downloads" folder mein save hogi</div>
+  <div class="drop-zone" id="dropZone">
+    <div style="font-size:32px;">📁</div>
+    <p>Image yahan drop karein ya tap karke choose karein<br>(ek se zyada images bhi chal sakti hain)</p>
+    <input type="file" id="fileInput" accept="image/*" multiple>
   </div>
+
+  <div id="status"></div>
+  <div id="results"></div>
+
+  <footer>100% browser mein chalta hai — koi image kisi server par upload nahi hoti.</footer>
 </div>
 
 <script>
-  const canvas = document.getElementById('card');
-  const ctx = canvas.getContext('2d');
-  const container = document.getElementById('canvasContainer');
-  const divider = document.getElementById('divider');
-  const placeholderHint = document.getElementById('placeholderHint');
-  const factText = document.getElementById('factText');
-  const fontSizeInput = document.getElementById('fontSize');
-  const fontSizeVal = document.getElementById('fontSizeVal');
-  const zoomInput = document.getElementById('zoom');
-  const zoomVal = document.getElementById('zoomVal');
-  const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const statusEl = document.getElementById('status');
+const resultsEl = document.getElementById('results');
+const targetKbInput = document.getElementById('targetKb');
 
-  const SIZE = 1080;
+dropZone.addEventListener('click', () => fileInput.click());
 
-  let state = {
-    image: null,
-    splitRatio: 0.62,
-    fontSize: 44,
-    bgColor: '#000000',
-    text: factText.value,
-    zoom: 1,          // 1 = fully fit (no extra crop), higher = zoomed in / more cropped
-    centerX: null,    // center point of the crop window, in source-image pixels
-    centerY: null,
-    cropW: null,      // last computed crop window size (used by drag handler for scaling)
-    cropH: null
-  };
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
-  // Text is always rendered in a single plain color (no multi-color word highlighting)
-  const TEXT_COLOR = '#ffffff';
+function handleFiles(fileList) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  if (files.length === 0) return;
+  const targetKb = parseFloat(targetKbInput.value) || 18;
+  statusEl.textContent = `Processing ${files.length} image(s)...`;
+  files.forEach(file => processImage(file, targetKb));
+}
 
-  function buildTokens(text) {
-    return text.split(/\s+/).filter(Boolean).map((w) => ({ text: w, color: TEXT_COLOR }));
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => resolve({ img, url });
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Canvas se WebP blob banane ka helper
+function canvasToWebpBlob(canvas, quality) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/webp', quality);
+  });
+}
+
+async function compressToTarget(img, targetBytes) {
+  let width = img.naturalWidth;
+  let height = img.naturalHeight;
+
+  // Agar image bahut badi hai, ek reasonable starting point set karein
+  const MAX_DIMENSION = 2000;
+  if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+    const scale = MAX_DIMENSION / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
   }
 
-  // ---- Parse special markers from the fact text ----
-  // 1) A leading emoji + [LABEL] tag, e.g. "🔴 [CONFIRMED NEWS] ..." -> shown as a
-  //    colored badge in the top-left corner of the image.
-  // 2) A trailing "(...)" e.g. "(ESPNcricinfo)" -> shown as a small source credit line
-  //    at the bottom edge of the image, just above the divider.
-  const LABEL_COLORS = {
-    '\u{1F534}': { bg: '#e53935', text: '#ffffff' }, // 🔴 red
-    '\u{1F535}': { bg: '#1e88e5', text: '#ffffff' }, // 🔵 blue
-    '\u{1F7E2}': { bg: '#43a047', text: '#ffffff' }, // 🟢 green
-    '\u{1F7E1}': { bg: '#fdd835', text: '#1a1a1a' }, // 🟡 yellow
-    '\u{1F7E0}': { bg: '#fb8c00', text: '#ffffff' }, // 🟠 orange
-    '\u{1F7E3}': { bg: '#8e24aa', text: '#ffffff' }, // 🟣 purple
-    '\u26AB': { bg: '#2b2b2b', text: '#ffffff' },     // ⚄1�7 black
-    '\u26AA': { bg: '#e0e0e0', text: '#1a1a1a' }      // ⚄1�7 white
-  };
+  let bestBlob = null;
 
-  function parseFactText(raw) {
-    let text = (raw || '').trim();
-    let label = null;
-    let labelColor = { bg: '#2b2b2b', text: '#ffffff' };
-    let source = null;
+  // Outer loop: agar quality kam karne se bhi target na mile, to dimensions ghatao
+  while (width >= 16 && height >= 16) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
 
-    // Leading "<emoji> [LABEL]" pattern
-    const labelMatch = text.match(/^([\u{1F534}\u{1F535}\u{1F7E2}\u{1F7E1}\u{1F7E0}\u{1F7E3}\u26AB\u26AA])\s*\[([^\]]+)\]\s*/u);
-    if (labelMatch) {
-      label = labelMatch[2].trim();
-      if (LABEL_COLORS[labelMatch[1]]) labelColor = LABEL_COLORS[labelMatch[1]];
-      text = text.slice(labelMatch[0].length).trim();
+    // Binary search quality (0.02 to 0.95) is dimension ke liye
+    let lo = 0.02, hi = 0.95;
+    let found = null;
+
+    // Pehle check karein ki lowest quality par bhi target milta hai ya nahi
+    const lowestBlob = await canvasToWebpBlob(canvas, lo);
+    if (lowestBlob.size > targetBytes) {
+      // Is dimension par bhi nahi ho pa raha — dimension chhota karo
+      bestBlob = lowestBlob.size < (bestBlob ? bestBlob.size : Infinity) ? lowestBlob : bestBlob;
+      width = Math.round(width * 0.85);
+      height = Math.round(height * 0.85);
+      continue;
     }
 
-    // Trailing "(...)" pattern -> source credit
-    const sourceMatch = text.match(/\(([^()]+)\)\s*$/);
-    if (sourceMatch) {
-      source = sourceMatch[1].trim();
-      text = text.slice(0, sourceMatch.index).trim();
-      // clean up a dangling dash/em-dash left before the removed source
-      text = text.replace(/[\u2013\u2014\-]\s*$/, '').trim();
-    }
+    found = lowestBlob;
 
-    return { body: text, label, labelColor, source };
-  }
-
-  function wrapTokens(context, tokens, maxWidth) {
-    const spaceWidth = context.measureText(' ').width;
-    const lines = [];
-    let currentLine = [];
-    let currentWidth = 0;
-    tokens.forEach(tok => {
-      const w = context.measureText(tok.text).width;
-      const addWidth = currentLine.length ? spaceWidth + w : w;
-      if (currentWidth + addWidth > maxWidth && currentLine.length) {
-        lines.push(currentLine);
-        currentLine = [{ ...tok, width: w }];
-        currentWidth = w;
+    for (let i = 0; i < 8; i++) {
+      const mid = (lo + hi) / 2;
+      const blob = await canvasToWebpBlob(canvas, mid);
+      if (blob.size <= targetBytes) {
+        found = blob;
+        lo = mid;
       } else {
-        currentLine.push({ ...tok, width: w });
-        currentWidth += addWidth;
+        hi = mid;
       }
-    });
-    if (currentLine.length) lines.push(currentLine);
-    return lines;
-  }
-
-  function drawCard() {
-    ctx.clearRect(0, 0, SIZE, SIZE);
-    const splitY = Math.round(SIZE * state.splitRatio);
-
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, SIZE, splitY);
-
-    if (state.image) {
-      const img = state.image;
-      const targetW = SIZE, targetH = splitY;
-      const targetRatio = targetW / targetH;
-      const imgRatio = img.width / img.height;
-
-      // base "fit" crop size at zoom = 1 (covers the target box exactly, no extra crop)
-      let baseW, baseH;
-      if (imgRatio > targetRatio) { baseH = img.height; baseW = baseH * targetRatio; }
-      else { baseW = img.width; baseH = baseW / targetRatio; }
-
-      const cropW = baseW / state.zoom;
-      const cropH = baseH / state.zoom;
-
-      // clamp the center point so the crop window never goes outside the image
-      state.centerX = Math.max(cropW / 2, Math.min(state.centerX, img.width - cropW / 2));
-      state.centerY = Math.max(cropH / 2, Math.min(state.centerY, img.height - cropH / 2));
-
-      const cropX = state.centerX - cropW / 2;
-      const cropY = state.centerY - cropH / 2;
-
-      state.cropW = cropW;
-      state.cropH = cropH;
-
-      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
     }
 
-    // ---- Parse the fact text for a [LABEL] tag and a (source) credit ----
-    const parsed = parseFactText(state.text || '');
-
-    // ---- Label badge: top-left corner of the image, solid color box ----
-    if (parsed.label) {
-      ctx.font = '700 30px "Segoe UI", Roboto, -apple-system, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-
-      const labelText = parsed.label.toUpperCase();
-      const labelPadX = 14;
-      const labelPadY = 8;
-      const labelTextWidth = ctx.measureText(labelText).width;
-      const labelBoxW = labelTextWidth + labelPadX * 2;
-      const labelBoxH = 32 + labelPadY * 2;
-      const labelX = 40;
-      const labelY = 36;
-
-      ctx.fillStyle = parsed.labelColor.bg;
-      ctx.fillRect(labelX, labelY, labelBoxW, labelBoxH);
-
-      ctx.fillStyle = parsed.labelColor.text;
-      ctx.fillText(labelText, labelX + labelPadX, labelY + labelPadY);
-    }
-
-    // ---- Watermark: "CricketRift" top-right corner of the image area ----
-    ctx.font = '700 32px "Segoe UI", Roboto, -apple-system, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-
-    const wmRingText = 'Cricket';
-    const wmRiftText = 'Rift';
-    const wmRingWidth = ctx.measureText(wmRingText).width;
-    const wmRiftWidth = ctx.measureText(wmRiftText).width;
-    const wmTotalWidth = wmRingWidth + wmRiftWidth;
-    const wmRightEdge = SIZE - 40;
-    const wmStartX = wmRightEdge - wmTotalWidth;
-    const wmTopY = 36;
-
-    // background box behind watermark text, 66% transparent black (i.e. 34% opaque)
-    const wmPadX = 10;
-    const wmPadY = 6;
-    ctx.fillStyle = 'rgba(0,0,0,0.34)';
-    ctx.fillRect(wmStartX - wmPadX, wmTopY - wmPadY, wmTotalWidth + wmPadX * 2, 32 + wmPadY * 2);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(wmRingText, wmStartX, wmTopY);
-
-    ctx.fillStyle = '#1e88e5';
-    ctx.fillText(wmRiftText, wmStartX + wmRingWidth, wmTopY);
-
-    // ---- Source credit line: bottom edge of the image, just above the divider ----
-    if (parsed.source) {
-      ctx.font = 'italic 26px "Segoe UI", Roboto, -apple-system, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-
-      const sourceText = 'Source: ' + parsed.source;
-      const srcPadX = 14;
-      const srcPadY = 8;
-      const srcTextWidth = ctx.measureText(sourceText).width;
-      const srcRightEdge = SIZE - 40;
-      const srcBottomY = splitY - 10;
-      const srcBoxW = srcTextWidth + srcPadX * 2;
-      const srcBoxH = 26 + srcPadY * 2;
-
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(srcRightEdge - srcBoxW, srcBottomY - srcBoxH, srcBoxW, srcBoxH);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(sourceText, srcRightEdge - srcPadX, srcBottomY - srcPadY);
-    }
-
-    ctx.fillStyle = state.bgColor;
-    ctx.fillRect(0, splitY, SIZE, SIZE - splitY);
-
-    const paddingX = 60;
-    const maxWidth = SIZE - paddingX * 2;
-    ctx.font = `600 ${state.fontSize}px sans-serif`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    const spaceWidth = ctx.measureText(' ').width;
-    const tokens = buildTokens(parsed.body || '');
-    const lines = wrapTokens(ctx, tokens, maxWidth);
-    const lineHeight = state.fontSize * 1.3;
-    const totalTextHeight = lines.length * lineHeight;
-    const textAreaCenterY = splitY + (SIZE - splitY) / 2;
-    let startY = textAreaCenterY - totalTextHeight / 2 + lineHeight / 2;
-
-    lines.forEach((line, i) => {
-      const lineWidth = line.reduce((sum, t, idx) => sum + t.width + (idx > 0 ? spaceWidth : 0), 0);
-      let x = SIZE / 2 - lineWidth / 2;
-      const y = startY + i * lineHeight;
-      line.forEach(tok => {
-        ctx.fillStyle = tok.color;
-        ctx.fillText(tok.text, x, y);
-        x += tok.width + spaceWidth;
-      });
-    });
-
-    const displayRatio = container.clientHeight / SIZE;
-    divider.style.top = (splitY * displayRatio) + 'px';
-    placeholderHint.style.display = state.image ? 'none' : 'flex';
-    placeholderHint.style.height = (splitY * displayRatio) + 'px';
+    bestBlob = found;
+    break;
   }
 
-  let dragging = false;
-  function ratioFromClientY(clientY) {
-    const rect = container.getBoundingClientRect();
-    let ratio = (clientY - rect.top) / rect.height;
-    return Math.max(0.2, Math.min(0.85, ratio));
+  return bestBlob;
+}
+
+async function processImage(file, targetKb) {
+  const targetBytes = targetKb * 1024;
+  try {
+    const { img, url } = await loadImage(file);
+    const blob = await compressToTarget(img, targetBytes);
+    URL.revokeObjectURL(url);
+
+    if (!blob) {
+      addErrorItem(file.name, 'Compression fail hua.');
+      return;
+    }
+
+    const outUrl = URL.createObjectURL(blob);
+    const sizeKb = (blob.size / 1024).toFixed(1);
+    const withinLimit = blob.size <= targetBytes;
+
+    const item = document.createElement('div');
+    item.className = 'list-item';
+    item.innerHTML = `
+      <img src="${outUrl}" alt="preview">
+      <div class="meta">
+        <div class="name">${file.name.replace(/\.[^/.]+$/, '')}.webp</div>
+        <div class="size">${sizeKb} KB ${withinLimit ? '✅' : '⚠️ target se zyada'}</div>
+      </div>
+      <a download="${file.name.replace(/\.[^/.]+$/, '')}.webp" href="${outUrl}">Download</a>
+    `;
+    resultsEl.appendChild(item);
+    statusEl.textContent = 'Done!';
+  } catch (err) {
+    addErrorItem(file.name, 'Load fail hua: ' + err.message);
   }
-  divider.addEventListener('pointerdown', (e) => {
-    dragging = true;
-    divider.setPointerCapture(e.pointerId);
-  });
-  divider.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    state.splitRatio = ratioFromClientY(e.clientY);
-    drawCard();
-  });
-  divider.addEventListener('pointerup', () => { dragging = false; });
-  divider.addEventListener('pointercancel', () => { dragging = false; });
+}
 
-  // ---- Move/reposition the image by dragging it ----
-  let imgDragging = false;
-  let lastX = 0, lastY = 0;
-
-  canvas.addEventListener('pointerdown', (e) => {
-    if (!state.image) return;
-    const rect = container.getBoundingClientRect();
-    const splitYDisplay = rect.top + rect.height * state.splitRatio;
-    if (e.clientY >= splitYDisplay) return; // only drag within the image area, not the text area
-    imgDragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    canvas.setPointerCapture(e.pointerId);
-  });
-
-  canvas.addEventListener('pointermove', (e) => {
-    if (!imgDragging || !state.image) return;
-    const rect = container.getBoundingClientRect();
-    const dxDisplay = e.clientX - lastX;
-    const dyDisplay = e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
-
-    // convert display-pixel movement to source-image-pixel movement
-    const displayImageHeight = rect.height * state.splitRatio;
-    const scaleFactorX = state.cropW / rect.width;
-    const scaleFactorY = state.cropH / displayImageHeight;
-
-    state.centerX -= dxDisplay * scaleFactorX;
-    state.centerY -= dyDisplay * scaleFactorY;
-
-    drawCard();
-  });
-
-  canvas.addEventListener('pointerup', (e) => {
-    imgDragging = false;
-    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
-  });
-  canvas.addEventListener('pointercancel', () => { imgDragging = false; });
-
-  document.getElementById('pickImageBtn').addEventListener('click', () => {
-    fileInput.click();
-  });
-
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        state.image = img;
-        state.zoom = 1;
-        state.centerX = img.width / 2;
-        state.centerY = img.height / 2;
-        zoomInput.value = 100;
-        zoomVal.textContent = 100;
-        drawCard();
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  factText.addEventListener('input', () => { state.text = factText.value; drawCard(); });
-  fontSizeInput.addEventListener('input', () => {
-    state.fontSize = parseInt(fontSizeInput.value, 10);
-    fontSizeVal.textContent = state.fontSize;
-    drawCard();
-  });
-  zoomInput.addEventListener('input', () => {
-    state.zoom = parseInt(zoomInput.value, 10) / 100;
-    zoomVal.textContent = zoomInput.value;
-    drawCard();
-  });
-  document.getElementById('saveBtn').addEventListener('click', () => {
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'FactCard_' + Date.now() + '.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }, 'image/png');
-  });
-
-  window.addEventListener('resize', drawCard);
-  window.addEventListener('load', drawCard);
-  drawCard();
+function addErrorItem(name, msg) {
+  const item = document.createElement('div');
+  item.className = 'error';
+  item.textContent = `${name}: ${msg}`;
+  resultsEl.appendChild(item);
+}
 </script>
 </body>
 </html>
