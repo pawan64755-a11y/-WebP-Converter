@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="hi-Latn">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Image ko WebP mein convert karein, size limit ke andar, watermark ke saath. 100% browser mein.">
+<meta name="theme-color" content="#0f172a">
 <title>Image to WebP Converter (Max 18KB)</title>
 <style>
-  * { box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #0f172a;
@@ -17,23 +19,37 @@
     align-items: center;
     min-height: 100vh;
   }
-  .container {
-    width: 100%;
-    max-width: 520px;
-  }
-  h1 {
-    font-size: 22px;
-    margin-bottom: 4px;
-    text-align: center;
-  }
+  .container { width: 100%; max-width: 520px; }
+  h1 { font-size: 22px; margin-bottom: 4px; text-align: center; }
   p.subtitle {
-    text-align: center;
-    color: #94a3b8;
-    font-size: 14px;
-    margin-top: 0;
-    margin-bottom: 24px;
+    text-align: center; color: #94a3b8; font-size: 14px;
+    margin-top: 0; margin-bottom: 24px;
   }
+  .settings {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 12px;
+    align-items: center;
+    margin-bottom: 16px;
+    background: #1e293b;
+    border: 0;
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .settings label { font-size: 13px; color: #94a3b8; }
+  .settings input[type=number],
+  .settings select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 14px;
+  }
+  .settings input[type=number] { max-width: 100px; }
   .drop-zone {
+    display: block;
     border: 2px dashed #475569;
     border-radius: 12px;
     padding: 32px 16px;
@@ -42,79 +58,17 @@
     transition: border-color 0.2s, background 0.2s;
     background: #1e293b;
   }
-  .drop-zone.dragover {
-    border-color: #38bdf8;
-    background: #1e2b3f;
-  }
+  .drop-zone.dragover, .drop-zone:focus-within { border-color: #38bdf8; background: #1e2b3f; }
+  .drop-zone .icon { font-size: 32px; }
   .drop-zone p { margin: 8px 0 0; color: #94a3b8; font-size: 14px; }
-  input[type=file] { display: none; }
-  .settings {
-    display: flex;
-    gap: 12px;
-    margin-top: 16px;
-    align-items: center;
-  }
-  .settings label {
-    font-size: 13px;
-    color: #94a3b8;
-    flex-shrink: 0;
-  }
-  .settings input[type=number] {
-    width: 70px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid #475569;
-    background: #1e293b;
-    color: #e2e8f0;
+  .drop-zone input[type=file] {
+    position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
   }
   #status {
-    margin-top: 16px;
-    font-size: 14px;
-    color: #94a3b8;
-    text-align: center;
-    min-height: 20px;
+    margin-top: 16px; font-size: 14px; color: #94a3b8;
+    text-align: center; min-height: 20px;
   }
-  .result {
-    margin-top: 20px;
-    background: #1e293b;
-    border-radius: 12px;
-    padding: 16px;
-    display: none;
-  }
-  .result.show { display: block; }
-  .result img {
-    max-width: 100%;
-    border-radius: 8px;
-    display: block;
-    margin: 0 auto 12px;
-  }
-  .info {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #cbd5e1;
-    margin-bottom: 12px;
-  }
-  .info b { color: #38bdf8; }
-  .download-btn {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    background: #38bdf8;
-    color: #0f172a;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-  }
-  .download-btn:active { opacity: 0.8; }
-  .error {
-    color: #f87171;
-    font-size: 13px;
-    text-align: center;
-    margin-top: 10px;
-  }
+  .error { color: #f87171; font-size: 13px; text-align: center; margin-top: 10px; }
   .list-item {
     background: #1e293b;
     border-radius: 10px;
@@ -125,71 +79,80 @@
     gap: 12px;
   }
   .list-item img {
-    width: 56px;
-    height: 56px;
-    object-fit: cover;
-    border-radius: 6px;
-    flex-shrink: 0;
+    width: 56px; height: 56px; object-fit: cover;
+    border-radius: 6px; flex-shrink: 0;
   }
-  .list-item .meta {
-    flex: 1;
-    min-width: 0;
-    font-size: 13px;
-  }
-  .list-item .meta .name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .list-item .meta .size { color: #94a3b8; font-size: 12px; }
+  .list-item .meta { flex: 1; min-width: 0; font-size: 13px; }
+  .list-item .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-item .size { color: #94a3b8; font-size: 12px; }
   .list-item a {
-    background: #38bdf8;
-    color: #0f172a;
-    padding: 8px 12px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
+    background: #38bdf8; color: #0f172a;
+    padding: 8px 12px; border-radius: 6px;
+    text-decoration: none; font-size: 13px; font-weight: 600;
     flex-shrink: 0;
   }
-  footer {
-    margin-top: 32px;
-    font-size: 12px;
-    color: #475569;
-    text-align: center;
-  }
+  .list-item a:active { opacity: 0.8; }
+  footer { margin-top: 32px; font-size: 12px; color: #64748b; text-align: center; }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>Image → WebP Converter</h1>
-  <p class="subtitle">Kisi bhi image ko WebP format mein convert karein, size hamesha target limit ke andar</p>
+<main class="container">
+  <header>
+    <h1>Image → WebP Converter</h1>
+    <p class="subtitle">Kisi bhi image ko WebP format mein convert karein, size hamesha target limit ke andar</p>
+  </header>
 
-  <div class="settings">
+  <section class="settings" aria-label="Settings">
     <label for="targetKb">Max size (KB):</label>
     <input type="number" id="targetKb" value="18" min="1" max="500">
-  </div>
 
-  <div class="drop-zone" id="dropZone">
-    <div style="font-size:32px;">📁</div>
+    <label for="watermark">Watermark:</label>
+    <select id="watermark">
+      <option value="none">Koi nahi</option>
+      <option value="Relationship Cues">Relationship Cues</option>
+      <option value="RishtaLogic.Com">RishtaLogic.Com</option>
+    </select>
+
+    <label for="wmSize">Watermark size:</label>
+    <select id="wmSize">
+      <option value="small">Small (subtle)</option>
+      <option value="medium" selected>Medium (blog ke liye best)</option>
+      <option value="large">Large</option>
+    </select>
+
+    <label for="wmPosition">Position:</label>
+    <select id="wmPosition">
+      <option value="bottom-right">Neeche – Right</option>
+      <option value="bottom-left">Neeche – Left</option>
+      <option value="center">Center</option>
+      <option value="top-right">Upar – Right</option>
+      <option value="top-left">Upar – Left</option>
+    </select>
+  </section>
+
+  <label class="drop-zone" id="dropZone" for="fileInput">
+    <div class="icon" aria-hidden="true">📁</div>
     <p>Image yahan drop karein ya tap karke choose karein<br>(ek se zyada images bhi chal sakti hain)</p>
     <input type="file" id="fileInput" accept="image/*" multiple>
-  </div>
+  </label>
 
-  <div id="status"></div>
+  <div id="status" role="status" aria-live="polite"></div>
   <div id="results"></div>
 
   <footer>100% browser mein chalta hai — koi image kisi server par upload nahi hoti.</footer>
-</div>
+</main>
 
 <script>
+'use strict';
+
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const statusEl = document.getElementById('status');
 const resultsEl = document.getElementById('results');
 const targetKbInput = document.getElementById('targetKb');
-
-dropZone.addEventListener('click', () => fileInput.click());
+const watermarkSelect = document.getElementById('watermark');
+const wmPositionSelect = document.getElementById('wmPosition');
+const wmSizeSelect = document.getElementById('wmSize');
 
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
@@ -201,14 +164,22 @@ dropZone.addEventListener('drop', (e) => {
   dropZone.classList.remove('dragover');
   handleFiles(e.dataTransfer.files);
 });
-fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+fileInput.addEventListener('change', (e) => {
+  handleFiles(e.target.files);
+  fileInput.value = ''; // same file dobara choose karne ke liye
+});
 
 function handleFiles(fileList) {
   const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
   if (files.length === 0) return;
   const targetKb = parseFloat(targetKbInput.value) || 18;
+  const watermark = {
+    text: watermarkSelect.value === 'none' ? '' : watermarkSelect.value,
+    position: wmPositionSelect.value,
+    size: wmSizeSelect.value
+  };
   statusEl.textContent = `Processing ${files.length} image(s)...`;
-  files.forEach(file => processImage(file, targetKb));
+  files.forEach(file => processImage(file, targetKb, watermark));
 }
 
 function loadImage(file) {
@@ -216,7 +187,7 @@ function loadImage(file) {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => resolve({ img, url });
-    img.onerror = reject;
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image open nahi ho payi')); };
     img.src = url;
   });
 }
@@ -228,7 +199,66 @@ function canvasToWebpBlob(canvas, quality) {
   });
 }
 
-async function compressToTarget(img, targetBytes) {
+// Image par watermark text draw karta hai (size image ke hisaab se scale hota hai)
+function drawWatermark(ctx, width, height, wm) {
+  if (!wm || !wm.text) return;
+
+  // Blog image ke hisaab se sizing: text ki width image width ka fixed hissa hoti hai,
+  // isliye 1200px ho ya compress hoke 400px, watermark ka look same rehta hai.
+  const WIDTH_RATIO = { small: 0.20, medium: 0.28, large: 0.38 };
+  const ratio = WIDTH_RATIO[wm.size] || WIDTH_RATIO.medium;
+  const family = '-apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+
+  const pad = Math.max(6, Math.round(Math.min(width, height) * 0.035));
+
+  // 100px par text naapo, phir target width ke hisaab se scale karo
+  ctx.font = `700 100px ${family}`;
+  const baseWidth = ctx.measureText(wm.text).width;
+  let fontSize = (width * ratio / baseWidth) * 100;
+
+  // Bahut wide/short images me text oversize na ho, aur chhoti image me padhne layak rahe
+  fontSize = Math.min(fontSize, height * 0.10, 64);
+  fontSize = Math.max(fontSize, 11);
+  fontSize = Math.round(fontSize);
+  ctx.font = `700 ${fontSize}px ${family}`;
+
+  // Safety: text image se bahar na jaye
+  while (fontSize > 8 && ctx.measureText(wm.text).width > width - pad * 2) {
+    fontSize -= 1;
+    ctx.font = `700 ${fontSize}px ${family}`;
+  }
+
+  const isRight = wm.position.endsWith('right');
+  const isLeft = wm.position.endsWith('left');
+  const isTop = wm.position.startsWith('top');
+  const isCenter = wm.position === 'center';
+
+  let x, y;
+  if (isCenter) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    x = width / 2;
+    y = height / 2;
+  } else {
+    ctx.textAlign = isRight ? 'right' : 'left';
+    ctx.textBaseline = isTop ? 'top' : 'bottom';
+    x = isRight ? width - pad : pad;
+    y = isTop ? pad : height - pad;
+  }
+
+  ctx.save();
+  ctx.globalAlpha = 0.75;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+  ctx.shadowBlur = Math.max(2, fontSize * 0.2);
+  ctx.lineWidth = Math.max(1, fontSize * 0.08);
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeText(wm.text, x, y);
+  ctx.fillText(wm.text, x, y);
+  ctx.restore();
+}
+
+async function compressToTarget(img, targetBytes, wm) {
   let width = img.naturalWidth;
   let height = img.naturalHeight;
 
@@ -249,27 +279,28 @@ async function compressToTarget(img, targetBytes) {
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0, width, height);
+    drawWatermark(ctx, width, height, wm);
 
     // Binary search quality (0.02 to 0.95) is dimension ke liye
     let lo = 0.02, hi = 0.95;
-    let found = null;
 
     // Pehle check karein ki lowest quality par bhi target milta hai ya nahi
     const lowestBlob = await canvasToWebpBlob(canvas, lo);
+    if (!lowestBlob) return bestBlob;
+
     if (lowestBlob.size > targetBytes) {
       // Is dimension par bhi nahi ho pa raha — dimension chhota karo
-      bestBlob = lowestBlob.size < (bestBlob ? bestBlob.size : Infinity) ? lowestBlob : bestBlob;
+      if (!bestBlob || lowestBlob.size < bestBlob.size) bestBlob = lowestBlob;
       width = Math.round(width * 0.85);
       height = Math.round(height * 0.85);
       continue;
     }
 
-    found = lowestBlob;
-
+    let found = lowestBlob;
     for (let i = 0; i < 8; i++) {
       const mid = (lo + hi) / 2;
       const blob = await canvasToWebpBlob(canvas, mid);
-      if (blob.size <= targetBytes) {
+      if (blob && blob.size <= targetBytes) {
         found = blob;
         lo = mid;
       } else {
@@ -284,11 +315,11 @@ async function compressToTarget(img, targetBytes) {
   return bestBlob;
 }
 
-async function processImage(file, targetKb) {
+async function processImage(file, targetKb, wm) {
   const targetBytes = targetKb * 1024;
   try {
     const { img, url } = await loadImage(file);
-    const blob = await compressToTarget(img, targetBytes);
+    const blob = await compressToTarget(img, targetBytes, wm);
     URL.revokeObjectURL(url);
 
     if (!blob) {
@@ -299,17 +330,32 @@ async function processImage(file, targetKb) {
     const outUrl = URL.createObjectURL(blob);
     const sizeKb = (blob.size / 1024).toFixed(1);
     const withinLimit = blob.size <= targetBytes;
+    const outName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
 
     const item = document.createElement('div');
     item.className = 'list-item';
-    item.innerHTML = `
-      <img src="${outUrl}" alt="preview">
-      <div class="meta">
-        <div class="name">${file.name.replace(/\.[^/.]+$/, '')}.webp</div>
-        <div class="size">${sizeKb} KB ${withinLimit ? '✅' : '⚠️ target se zyada'}</div>
-      </div>
-      <a download="${file.name.replace(/\.[^/.]+$/, '')}.webp" href="${outUrl}">Download</a>
-    `;
+
+    const thumb = document.createElement('img');
+    thumb.src = outUrl;
+    thumb.alt = 'Converted image preview';
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'name';
+    nameEl.textContent = outName;
+    const sizeEl = document.createElement('div');
+    sizeEl.className = 'size';
+    sizeEl.textContent = `${sizeKb} KB ${withinLimit ? '✅' : '⚠️ target se zyada'}` +
+      (wm.text ? ` • ${wm.text}` : '');
+    meta.append(nameEl, sizeEl);
+
+    const link = document.createElement('a');
+    link.href = outUrl;
+    link.download = outName;
+    link.textContent = 'Download';
+
+    item.append(thumb, meta, link);
     resultsEl.appendChild(item);
     statusEl.textContent = 'Done!';
   } catch (err) {
