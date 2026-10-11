@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Image ko WebP mein convert karein, size limit ke andar, watermark ke saath. 100% browser mein.">
+<meta name="description" content="Image ko WebP mein convert karein, size limit ke andar. 100% browser mein.">
 <meta name="theme-color" content="#0f172a">
 <title>Image to WebP Converter (Max 18KB)</title>
 <style>
@@ -105,28 +105,6 @@
   <section class="settings" aria-label="Settings">
     <label for="targetKb">Max size (KB):</label>
     <input type="number" id="targetKb" value="18" min="1" max="500">
-
-    <label for="watermark">Watermark:</label>
-    <select id="watermark">
-      <option value="none">Koi nahi</option>
-      <option value="Relationship Cues" selected>Relationship Cues</option>
-    </select>
-
-    <label for="wmSize">Watermark size:</label>
-    <select id="wmSize">
-      <option value="small">Small (subtle)</option>
-      <option value="medium" selected>Medium (blog ke liye best)</option>
-      <option value="large">Large</option>
-    </select>
-
-    <label for="wmPosition">Position:</label>
-    <select id="wmPosition">
-      <option value="bottom-right">Neeche – Right</option>
-      <option value="bottom-left">Neeche – Left</option>
-      <option value="center">Center</option>
-      <option value="top-right">Upar – Right</option>
-      <option value="top-left">Upar – Left</option>
-    </select>
   </section>
 
   <label class="drop-zone" id="dropZone" for="fileInput">
@@ -149,9 +127,6 @@ const fileInput = document.getElementById('fileInput');
 const statusEl = document.getElementById('status');
 const resultsEl = document.getElementById('results');
 const targetKbInput = document.getElementById('targetKb');
-const watermarkSelect = document.getElementById('watermark');
-const wmPositionSelect = document.getElementById('wmPosition');
-const wmSizeSelect = document.getElementById('wmSize');
 
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
@@ -172,13 +147,8 @@ function handleFiles(fileList) {
   const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
   if (files.length === 0) return;
   const targetKb = parseFloat(targetKbInput.value) || 18;
-  const watermark = {
-    text: watermarkSelect.value === 'none' ? '' : watermarkSelect.value,
-    position: wmPositionSelect.value,
-    size: wmSizeSelect.value
-  };
   statusEl.textContent = `Processing ${files.length} image(s)...`;
-  files.forEach(file => processImage(file, targetKb, watermark));
+  files.forEach(file => processImage(file, targetKb));
 }
 
 function loadImage(file) {
@@ -198,66 +168,7 @@ function canvasToWebpBlob(canvas, quality) {
   });
 }
 
-// Image par watermark text draw karta hai (size image ke hisaab se scale hota hai)
-function drawWatermark(ctx, width, height, wm) {
-  if (!wm || !wm.text) return;
-
-  // Blog image ke hisaab se sizing: text ki width image width ka fixed hissa hoti hai,
-  // isliye 1200px ho ya compress hoke 400px, watermark ka look same rehta hai.
-  const WIDTH_RATIO = { small: 0.20, medium: 0.28, large: 0.38 };
-  const ratio = WIDTH_RATIO[wm.size] || WIDTH_RATIO.medium;
-  const family = '-apple-system, "Segoe UI", Roboto, Arial, sans-serif';
-
-  const pad = Math.max(6, Math.round(Math.min(width, height) * 0.035));
-
-  // 100px par text naapo, phir target width ke hisaab se scale karo
-  ctx.font = `700 100px ${family}`;
-  const baseWidth = ctx.measureText(wm.text).width;
-  let fontSize = (width * ratio / baseWidth) * 100;
-
-  // Bahut wide/short images me text oversize na ho, aur chhoti image me padhne layak rahe
-  fontSize = Math.min(fontSize, height * 0.10, 64);
-  fontSize = Math.max(fontSize, 11);
-  fontSize = Math.round(fontSize);
-  ctx.font = `700 ${fontSize}px ${family}`;
-
-  // Safety: text image se bahar na jaye
-  while (fontSize > 8 && ctx.measureText(wm.text).width > width - pad * 2) {
-    fontSize -= 1;
-    ctx.font = `700 ${fontSize}px ${family}`;
-  }
-
-  const isRight = wm.position.endsWith('right');
-  const isLeft = wm.position.endsWith('left');
-  const isTop = wm.position.startsWith('top');
-  const isCenter = wm.position === 'center';
-
-  let x, y;
-  if (isCenter) {
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    x = width / 2;
-    y = height / 2;
-  } else {
-    ctx.textAlign = isRight ? 'right' : 'left';
-    ctx.textBaseline = isTop ? 'top' : 'bottom';
-    x = isRight ? width - pad : pad;
-    y = isTop ? pad : height - pad;
-  }
-
-  ctx.save();
-  ctx.globalAlpha = 0.75;
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
-  ctx.shadowBlur = Math.max(2, fontSize * 0.2);
-  ctx.lineWidth = Math.max(1, fontSize * 0.08);
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeText(wm.text, x, y);
-  ctx.fillText(wm.text, x, y);
-  ctx.restore();
-}
-
-async function compressToTarget(img, targetBytes, wm) {
+async function compressToTarget(img, targetBytes) {
   let width = img.naturalWidth;
   let height = img.naturalHeight;
 
@@ -278,7 +189,6 @@ async function compressToTarget(img, targetBytes, wm) {
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0, width, height);
-    drawWatermark(ctx, width, height, wm);
 
     // Binary search quality (0.02 to 0.95) is dimension ke liye
     let lo = 0.02, hi = 0.95;
@@ -314,11 +224,11 @@ async function compressToTarget(img, targetBytes, wm) {
   return bestBlob;
 }
 
-async function processImage(file, targetKb, wm) {
+async function processImage(file, targetKb) {
   const targetBytes = targetKb * 1024;
   try {
     const { img, url } = await loadImage(file);
-    const blob = await compressToTarget(img, targetBytes, wm);
+    const blob = await compressToTarget(img, targetBytes);
     URL.revokeObjectURL(url);
 
     if (!blob) {
@@ -345,8 +255,7 @@ async function processImage(file, targetKb, wm) {
     nameEl.textContent = outName;
     const sizeEl = document.createElement('div');
     sizeEl.className = 'size';
-    sizeEl.textContent = `${sizeKb} KB ${withinLimit ? '✅' : '⚠️ target se zyada'}` +
-      (wm.text ? ` • ${wm.text}` : '');
+    sizeEl.textContent = `${sizeKb} KB ${withinLimit ? '✅' : '⚠️ target se zyada'}`;
     meta.append(nameEl, sizeEl);
 
     const link = document.createElement('a');
